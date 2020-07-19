@@ -1,7 +1,7 @@
 (async function () {
 
-    const _WIDTH = 35;
-    const _HEIGHT = 35;
+    const _WIDTH = 40;
+    const _HEIGHT = 40;
     const _ROOM_SIZE = 24;
     const _TILE_SIZE = 8;
     const _ROOMS_PER_TICK = 32;
@@ -12,7 +12,7 @@
     const stack = [];
 
     function indexToCoordinates(i) {
-        const x = (i % _WIDTH);
+        const x = i % _WIDTH;
         const y = Math.floor(i / _WIDTH);
         return {x, y}
     }
@@ -53,22 +53,22 @@
         const south = rooms[coordinatesToIndex(x, y + 1)];
         const west = rooms[coordinatesToIndex(x - 1, y)];
 
-        if (north && !north.visited) {
+        if (!north?.visited) {
             neighbors.push(north);
         }
-        if (east && !east.visited) {
+        if (!east?.visited) {
             neighbors.push(east);
         }
-        if (south && !south.visited) {
+        if (!south?.visited) {
             neighbors.push(south);
         }
-        if (west && !west.visited) {
+        if (!west?.visited) {
             neighbors.push(west);
         }
 
-        if (neighbors.length > 0) {
-            const r = Math.floor(Math.random() * neighbors.length);
-            return neighbors[r];
+        if (neighbors.length) {
+            const rnd = Math.floor(Math.random() * neighbors.length);
+            return neighbors[rnd];
         } else {
             return undefined;
         }
@@ -124,13 +124,18 @@
     current.visited = true;
 
     function update() {
+
+        // Get a random, unvisited, neighbor.
         const next = findRandomNeighbor(current);
 
         if (next) {
-            stack.push(current);
-
+            // Open the walls between current and next.
             openWalls(current, next);
 
+            // Push current to stack
+            stack.push(current);
+
+            // Next as current and mark as visited.
             current = next;
             current.visited = true;
 
@@ -177,7 +182,6 @@
         for (let i = 0; i < _ROOMS_PER_TICK; i++) {
             update();
         }
-        render();
 
         if (rooms.find(cell => !cell.visited)) {
             requestAnimationFrame(tick);
@@ -185,8 +189,10 @@
             // Add entry and exit.
             rooms[0].north = false;
             rooms[rooms.length - 1].south = false;
-            render();
         }
+
+        render();
+
     }
 
     tick();
