@@ -173,7 +173,7 @@
 
             if (room.visited) {
                 if (room === current) {
-                    context.drawImage(tiles[10], x + _TILE_SIZE, y + _TILE_SIZE);
+                    context.drawImage(tiles[0], x + _TILE_SIZE, y + _TILE_SIZE);
                 } else {
                     context.drawImage(tiles[_ROOM_TILE_ID], x + _TILE_SIZE, y + _TILE_SIZE);
                 }
@@ -213,13 +213,8 @@
         if (rooms.find(room => !room.visited)) {
             requestAnimationFrame(tick);
         } else {
-            // Add entry and exit.
-            rooms[0].north = false;
-            rooms[rooms.length - 1].south = false;
-            render();
             gif.render();
         }
-
 
     }
 
