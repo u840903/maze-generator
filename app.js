@@ -1,12 +1,27 @@
 (async function () {
 
-    const _WIDTH = 40;
-    const _HEIGHT = 40;
+    const _WIDTH = 20;
+    const _HEIGHT = 20;
     const _ROOM_SIZE = 24;
     const _TILE_SIZE = 8;
-    const _ROOMS_PER_TICK = 32;
+    const _ROOMS_PER_TICK = 1;
+    const _ROOM_TILE_ID = 7;
 
-    const corridor = 10;
+    // Start GIF recording.
+    const gif = new GIF({
+        workers: 4,
+        workerScript: './gif/gif.worker.js',
+        width: _WIDTH * _ROOM_SIZE,
+        height: _HEIGHT * _ROOM_SIZE
+    });
+
+    gif.on('start', () => console.log('START'));
+    gif.on('finished', function (blob) {
+        const image = document.createElement('img');
+        image.src = URL.createObjectURL(blob);
+        document.body.appendChild(image);
+    });
+
 
     const rooms = [];
     const stack = [];
@@ -53,16 +68,16 @@
         const south = rooms[coordinatesToIndex(x, y + 1)];
         const west = rooms[coordinatesToIndex(x - 1, y)];
 
-        if (!north?.visited) {
+        if (north && !north?.visited) {
             neighbors.push(north);
         }
-        if (!east?.visited) {
+        if (east && !east?.visited) {
             neighbors.push(east);
         }
-        if (!south?.visited) {
+        if (south && !south?.visited) {
             neighbors.push(south);
         }
-        if (!west?.visited) {
+        if (west && !west?.visited) {
             neighbors.push(west);
         }
 
@@ -102,7 +117,7 @@
     for (let i = 0; i < (_WIDTH * _HEIGHT) * Math.pow(_ROOM_SIZE / _TILE_SIZE, 2); i++) {
         const x = (i % (_WIDTH * 3)) * _TILE_SIZE;
         const y = Math.floor(i / (_WIDTH * 3)) * _TILE_SIZE;
-        context.drawImage(tiles[Math.floor(Math.random() * 8)], x, y);
+        context.drawImage(tiles[Math.floor(Math.random() * 4)], x, y);
     }
 
     // Create rooms.
@@ -121,26 +136,31 @@
     }
 
     let current = rooms[0];
-    current.visited = true;
 
     function update() {
+
+        current.visited = true;
 
         // Get a random, unvisited, neighbor.
         const next = findRandomNeighbor(current);
 
         if (next) {
-            // Open the walls between current and next.
-            openWalls(current, next);
+
+            next.visited = true;
 
             // Push current to stack
             stack.push(current);
 
+            // Open the walls between current and next.
+            openWalls(current, next);
+
             // Next as current and mark as visited.
             current = next;
-            current.visited = true;
 
         } else if (stack.length > 0) {
             current = stack.pop();
+        } else {
+            current = undefined;
         }
 
     }
@@ -152,46 +172,54 @@
             const y = room.y * _ROOM_SIZE;
 
             if (room.visited) {
-                context.drawImage(tiles[corridor], x + _TILE_SIZE, y + _TILE_SIZE);
+                if (room === current) {
+                    context.drawImage(tiles[10], x + _TILE_SIZE, y + _TILE_SIZE);
+                } else {
+                    context.drawImage(tiles[_ROOM_TILE_ID], x + _TILE_SIZE, y + _TILE_SIZE);
+                }
             }
 
             // North
             if (!room.north) {
-                context.drawImage(tiles[corridor], x + _TILE_SIZE, y);
+                context.drawImage(tiles[_ROOM_TILE_ID], x + _TILE_SIZE, y);
             }
 
             // East
             if (!room.east) {
-                context.drawImage(tiles[corridor], x + _TILE_SIZE * 2, y + _TILE_SIZE);
+                context.drawImage(tiles[_ROOM_TILE_ID], x + _TILE_SIZE * 2, y + _TILE_SIZE);
             }
 
             // South
             if (!room.south) {
-                context.drawImage(tiles[corridor], x + _TILE_SIZE, y + _TILE_SIZE * 2);
+                context.drawImage(tiles[_ROOM_TILE_ID], x + _TILE_SIZE, y + _TILE_SIZE * 2);
             }
 
             // West
             if (!room.west) {
-                context.drawImage(tiles[corridor], x, y + _TILE_SIZE);
+                context.drawImage(tiles[_ROOM_TILE_ID], x, y + _TILE_SIZE);
             }
         });
 
+        gif.addFrame(context, {copy: true, delay: 20});
     }
 
     function tick() {
+
         for (let i = 0; i < _ROOMS_PER_TICK; i++) {
             update();
         }
+        render();
 
-        if (rooms.find(cell => !cell.visited)) {
+        if (rooms.find(room => !room.visited)) {
             requestAnimationFrame(tick);
         } else {
             // Add entry and exit.
             rooms[0].north = false;
             rooms[rooms.length - 1].south = false;
+            render();
+            gif.render();
         }
 
-        render();
 
     }
 
